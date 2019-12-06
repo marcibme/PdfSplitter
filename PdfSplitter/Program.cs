@@ -11,7 +11,6 @@ using NLog;
 
 namespace PdfSplitter
 {
-    //lekérdezni a pdf oldalszámát, végén ellenőrizni, hogy annyi van e a szétvágottban!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     class Program
     {
         private static readonly NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
@@ -24,7 +23,6 @@ namespace PdfSplitter
         private static readonly bool overwriteOutput;
         private static readonly bool infoLogOn;
         private static readonly bool archivateOriginalFiles;
-        //private static readonly bool outputSeparateFolders;
         public static List<string> FilesUnderProcessing { get; set; }
         static Program()
         {
@@ -38,7 +36,6 @@ namespace PdfSplitter
             {
 
                 correctArgs &= int.TryParse(config["pagePerFile"], out int page);
-                //correctArgs &= bool.TryParse(config["outputInSeparateFolders"], out bool separateFolders);
                 correctArgs &= bool.TryParse(config["overwriteOutput"], out bool overwriteOutput_temp);
                 correctArgs &= bool.TryParse(config["infoLogOn"], out bool infoLogOn_temp);
                 correctArgs &= bool.TryParse(config["archivateOriginalFiles"], out bool archivateOriginalFiles_temp);
@@ -51,7 +48,6 @@ namespace PdfSplitter
                     throw new ArgumentException("Hibás argumentum!");
                 }
 
-                //outputSeparateFolders = separateFolders;
                 pagePerFile = page;
                 infoLogOn = infoLogOn_temp;
                 overwriteOutput = overwriteOutput_temp;
@@ -137,21 +133,15 @@ namespace PdfSplitter
 
             var temp = Path.GetDirectoryName(file).Replace(inputFolder, "");
             if (temp.StartsWith("\\")) { temp = temp.Remove(0, 1); }
-            //var fileOutputFolder = Path.Combine(outputFolder, temp, Path.GetFileNameWithoutExtension(file));
-            //var fileOutputFolder = outputSeparateFolders ? Path.Combine(outputFolder, temp, Path.GetFileNameWithoutExtension(file)) : Path.Combine(outputFolder, temp);
             var fileOutputFolder = Path.Combine(outputFolder, temp);
 
             if (overwriteOutput)
             {
                 if (File.Exists(archiveDestPath)) { File.Delete(archiveDestPath); }
-                //if (Directory.Exists(fileOutputFolder)) { Directory.Delete(fileOutputFolder, true); }
             }
 
-
-
             if (File.Exists(archiveDestPath))
-            //if (File.Exists(archiveDestPath) || Directory.Exists(fileOutputFolder))
-                {
+            {
                 _logger.Error($"a {file} már létezik a kimeneten, előbb töröld az archiv és output mappából");
                 Console.WriteLine("Press ESC to stop");
                 IsFileExistsInOutPut = true;
@@ -166,8 +156,6 @@ namespace PdfSplitter
 
             if (!Directory.Exists(fileOutputFolder)) Directory.CreateDirectory(fileOutputFolder);
             if (!Directory.Exists(archiveDestFolder) && archivateOriginalFiles) Directory.CreateDirectory(archiveDestFolder);
-
-
             /*************************************************************************************************************/
             int numberOfPages = 0;
 
@@ -178,31 +166,30 @@ namespace PdfSplitter
             var outputPath = Path.Combine(fileOutputFolder, Path.GetFileName(file));
             if (numberOfPages < pagePerFile)
             {
-
-                File.Copy(file, outputPath,overwriteOutput);
+                File.Copy(file, outputPath, overwriteOutput);
                 ProcessDone(file, fileOutputFolder, archiveDestPath);
             }
             else
-            using (var process = new Process())
-            {
+                using (var process = new Process())
+                {
 
-                var decoratedFile = $"\"{file}\"";
-                var decoratedFileoutputFolder = $"\"{fileOutputFolder}\"";
+                    var decoratedFile = $"\"{file}\"";
+                    var decoratedFileoutputFolder = $"\"{fileOutputFolder}\"";
                     var overwriteString = overwriteOutput ? "-j overwrite" : "";
-                process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                    process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
 
-                process.EnableRaisingEvents = true;
-                process.StartInfo.FileName = "\"" + sejdaPath + "\\sejda-console.bat\"";
-                var args = $"splitbyevery {overwriteString} -p [BASENAME]-[FILENUMBER###] -f {decoratedFile} -o {decoratedFileoutputFolder} -n {pagePerFile}";
-                process.StartInfo.Arguments = args;
+                    process.EnableRaisingEvents = true;
+                    process.StartInfo.FileName = "\"" + sejdaPath + "\\sejda-console.bat\"";
+                    var args = $"splitbyevery {overwriteString} -p [BASENAME]-[FILENUMBER###] -f {decoratedFile} -o {decoratedFileoutputFolder} -n {pagePerFile}";
+                    process.StartInfo.Arguments = args;
 
-                process.Exited += (sender, e) => Process_Exited(sender, e, file, fileOutputFolder, archiveDestPath);
+                    process.Exited += (sender, e) => Process_Exited(sender, e, file, fileOutputFolder, archiveDestPath);
 
-                process.StartInfo.CreateNoWindow = true;
+                    process.StartInfo.CreateNoWindow = true;
 
-                process.Start();
-                process.WaitForExit();
-            }
+                    process.Start();
+                    process.WaitForExit();
+                }
         }
 
 
@@ -238,7 +225,6 @@ namespace PdfSplitter
                 FileName = $@"{Environment.CurrentDirectory}\Error_log.txt",
                 Layout = "${longdate};${level:uppercase=true};${logger};${message};${exception}",
                 Encoding = System.Text.Encoding.UTF8
-
             };
 
             var logfileInfo = new NLog.Targets.FileTarget("logfileInfo")
